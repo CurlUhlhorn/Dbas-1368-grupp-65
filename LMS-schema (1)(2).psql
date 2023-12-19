@@ -1,81 +1,108 @@
-CREATE TABLE Books
-(bookID integer PRIMARY KEY,
-title varchar(100),
-pages integer);
-
-CREATE TABLE Resources
-(physicalID integer PRIMARY KEY,
-bookID integer,
-damaged BOOLEAN DEFAULT false);
-
-CREATE TABLE Prequels
-(bookID INTEGER,
-prequelID INTEGER,
-PRIMARY KEY (bookID,prequelID));
-
-CREATE TABLE Edition
-(bookID INTEGER,
-ISBN varchar(20),
-edition Integer,
-publisher varchar(100),
-DoP Date,
-PRIMARY KEY (bookID));
-
-CREATE TABLE Author
-(bookID integer,
-author varchar(100),
-PRIMARY KEY (bookID, author));
-
-CREATE TABLE Genre
-(bookID integer,
-genre varchar(100),
-PRIMARY KEY (bookID, genre));
-
-CREATE TABLE Language
-(bookID INTEGER,
-language varchar(100),
-PRIMARY KEY (bookID, language));
-
-CREATE TABLE Users
-(userID integer PRIMARY KEY,
-name varchar(100),
-address varchar(100),
-email varchar(50));
-
-CREATE TABLE Students
-(userID integer,
-program varchar(100),
-PRIMARY KEY (userID)
+CREATE TABLE Books(
+    bookID integer PRIMARY KEY,
+    title varchar(100) NOT NULL,
+    pages integer,
+    CHECK (pages >= 0)
 );
 
-CREATE TABLE Admins
-(userID integer,
-department varchar(100),
-phoneNumber varchar(15),
-PRIMARY KEY (userID)
+CREATE TABLE Resources(
+    physicalID integer PRIMARY KEY,
+    bookID integer NOT NULL,
+    damaged BOOLEAN DEFAULT false,
+    FOREIGN KEY (bookID) REFERENCES Books(bookID)
 );
 
-CREATE TABLE Borrowing
-(borrowingID Integer PRIMARY KEY,
-physicalID integer,
-userID integer,
-DoB DATE DEFAULT CURRENT_DATE,
-DoR DATE,
-DoE DATE DEFAULT CURRENT_DATE+7);
+CREATE TABLE Prequels(
+    bookID INTEGER NOT NULL,
+    prequelID INTEGER,
+    PRIMARY KEY (bookID,prequelID),
+    FOREIGN KEY (bookID) REFERENCES Books(bookID)
+);
+
+CREATE TABLE Edition(
+    bookID INTEGER NOT NULL,
+    ISBN varchar(20) NOT NULL,
+    edition Integer,
+    CHECK (edition >= 0),
+    publisher varchar(100),
+    DoP Date,
+    PRIMARY KEY (bookID),
+    FOREIGN KEY (bookID) REFERENCES Books(bookID)
+);
+
+CREATE TABLE Author(
+    bookID integer NOT NULL,
+    author varchar(100),
+    PRIMARY KEY (bookID, author),
+    FOREIGN KEY (bookID) REFERENCES Books(bookID)
+);
+
+CREATE TABLE Genre(
+    bookID integer NOT NULL,
+    genre varchar(100),
+    PRIMARY KEY (bookID, genre),
+    FOREIGN KEY (bookID) REFERENCES Books(bookID)
+);
+
+CREATE TABLE Language(
+    bookID INTEGER,
+    language varchar(100),
+    PRIMARY KEY (bookID, language),
+    FOREIGN KEY (bookID) REFERENCES Books(bookID)
+);
+
+CREATE TABLE Users(
+    userID integer PRIMARY KEY NOT NULL,
+    name varchar(100) NOT NULL,
+    address varchar(100) NOT NULL,
+    email varchar(50) NOT NULL,
+    CHECK (email ~ $$.+@kth.se$$)
+);
+
+CREATE TABLE Students(
+    userID integer NOT NULL,
+    program varchar(100) NOT NULL,
+    PRIMARY KEY (userID),
+    FOREIGN KEY (userID) REFERENCES Users(userID)
+);
+
+CREATE TABLE Admins(
+    userID integer NOT NULL,
+    department varchar(100) NOT NULL,
+    phoneNumber varchar(15) NOT NULL,
+    PRIMARY KEY (userID),
+    FOREIGN KEY (userID) REFERENCES Users(userID)
+);
+
+CREATE TABLE Borrowing(
+    borrowingID Integer PRIMARY KEY,
+    physicalID integer NOT NULL,
+    userID integer NOT NULL,
+    DoB DATE DEFAULT CURRENT_DATE,
+    DoR DATE,
+    CHECK (DoR >= DoB),
+    DoE DATE DEFAULT CURRENT_DATE+7,
+    FOREIGN KEY (userID) REFERENCES Users(userID),
+    FOREIGN KEY (physicalID) REFERENCES Resources(physicalID)
+);
 
 CREATE TYPE pMethod AS ENUM ('Klarna', 'Swish', 'Card','Cash');
 
-CREATE TABLE Fines
-(borrowingID integer,
-Amount integer,
-PRIMARY KEY (borrowingID));
+CREATE TABLE Fines(
+    borrowingID integer NOT NULL,
+    amount integer NOT NULL,
+    CHECK (amount >= 0),
+    PRIMARY KEY (borrowingID),
+    FOREIGN KEY (borrowingID) REFERENCES Borrowing(borrowingID)
+);
  
-CREATE TABLE TRANSACTIONS
-(transactionID integer PRIMARY KEY,
- borrowingID integer,
- paymentMethod pMethod,
- DoP DATE
- );
+CREATE TABLE TRANSACTIONS(
+    transactionID integer PRIMARY KEY,
+    borrowingID integer NOT NULL,
+    paymentMethod pMethod NOT NULL,
+    DoP DATE,
+    FOREIGN KEY (borrowingID) REFERENCES Fines(borrowingID)
+);
  
 --drop table admins,author,books,borrowing,edition,fines,genre,language,prequels,resources,students,transactions,users; 
  

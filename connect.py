@@ -36,18 +36,17 @@ arguments = parser.parse_args()
 # Simple function to get all books with a specific genre.
 def get_book_title_by_genre():
     genre = input("Please enter a genre: ")
-    query = f"SELECT books.title FROM books LEFT JOIN genre ON books.bookid = genre.bookid WHERE genre.genre = '{genre}'"
-    cur.execute(query)
+    query = f"SELECT books.title FROM books LEFT JOIN genre ON books.bookid = genre.bookid WHERE genre.genre = %(genre)'"
+    cur.execute(query, {'genre': genre})
     result = cur.fetchall()
     titles = [row[0] for row in result]
-
     print(titles)
     
 # Simple function to get all books with a specific title.
 def get_book_by_title():
     title = ' '.join(arguments.search)
-    query = f"SELECT title, physicalid, damaged FROM books INNER JOIN resources ON books.bookID = resources.bookID WHERE title = '{title}'"
-    cur.execute(query)
+    query = "SELECT title, physicalid, damaged FROM books INNER JOIN resources ON books.bookID = resources.bookID WHERE title = %(title)"
+    cur.execute(query, {'title': title})
     result = cur.fetchall()
     print(tabulate(result, headers=['Title', 'ID', 'Damaged'], tablefmt='fancy_grid'))
     
@@ -60,13 +59,13 @@ def get_all_titles():
 def borrow_book():
     email = arguments.borrowing[0]
     physicalid = arguments.borrowing[1]
-    query = f"SELECT email FROM users WHERE email = '{email}'"
-    cur.execute(query)
+    query = f"SELECT email FROM users WHERE email = %*(email)'"
+    cur.execute(query, {'email': email})
     result = cur.fetchall()
     if(not result):
         raise Exception('User with given email does not exist')
-    query = f"""INSERT INTO borrowing(physicalid, userid, dob) SELECT '{physicalid}', userid, '{datetime.datetime.now().strftime("%Y-%m-%d")}' FROM users WHERE email = '{email}';"""
-    cur.execute(query)
+    query = f"""INSERT INTO borrowing(physicalid, userid, dob) SELECT %(physicalid), userid, %(date) FROM users WHERE email = %(email);"""
+    cur.execute(query, {'physicalid': physicalid, 'date': datetime.datetime.now().strftime("%Y-%m-%d"), 'email': email})
     conn.commit()
     print(f"Return the book by {(datetime.datetime.now() + datetime.timedelta(days=7)).strftime('%Y-%m-%d')}")
     
